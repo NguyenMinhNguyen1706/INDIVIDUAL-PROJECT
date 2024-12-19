@@ -1,160 +1,225 @@
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
+import java.util.Timer;
 import javax.swing.*;
 
 public class Game_caro implements ActionListener {
 
-    // Biến ngẫu nhiên để xác định người chơi nào đi trước
-    private Random random = new Random();
+    Random random = new Random(); // Tạo đối tượng để xác định lượt đi đầu tiên ngẫu nhiên.
+    Timer timer = new Timer(); // Tạo đối tượng để quản lý thời gian (ví dụ: delay trước khi bắt đầu trò chơi hoặc reset).
+    JFrame frame = new JFrame(); // Tạo cửa sổ chính của trò chơi.
+    JPanel titlePanel = new JPanel(); // Panel để hiển thị tiêu đề của trò chơi.
+    JPanel buttonPanel = new JPanel(); // Panel chứa các nút tương ứng với bảng cờ.
+    JLabel textfield = new JLabel(); // Nhãn để hiển thị thông báo trạng thái của trò chơi.
+    JButton[] buttons = new JButton[9]; // Mảng chứa 9 nút tương ứng với 9 ô trên bảng cờ.
+    boolean player1Turn; // Biến boolean để kiểm tra lượt chơi hiện tại (người chơi 1: true, người chơi 2: false).
+    boolean tie = true; // Biến boolean để xác định nếu trò chơi hòa.
+    int turns = 0; // Biến đếm số lượt đã chơi.
 
-    // Các thành phần giao diện chính
-    private JFrame frame = new JFrame(); // Khung chính của trò chơi
-    private JPanel titlePanel = new JPanel(); // Panel chứa tiêu đề
-    private JPanel buttonPanel = new JPanel(); // Panel chứa các nút chơi
-    private JPanel resetPanel = new JPanel(); // Panel chứa nút reset
-    private JLabel textfield = new JLabel(); // Nhãn hiển thị trạng thái trò chơi
-    private JButton[] buttons = new JButton[9]; // Mảng chứa các nút ô cờ
-    private JButton resetButton = new JButton("Reset"); // Nút reset trò chơi
-    private boolean player1Turn; // Cờ kiểm tra lượt của người chơi
+    Game_caro() {
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Đóng chương trình khi người dùng thoát cửa sổ.
+        frame.setSize(800, 800); // Đặt kích thước cửa sổ.
+        frame.getContentPane().setBackground(new Color(50, 50, 50)); // Đặt màu nền của cửa sổ.
+        frame.setLayout(new BorderLayout()); // Sử dụng bố cục BorderLayout.
+        frame.setVisible(true); // Hiển thị cửa sổ.
+        frame.setTitle("Tic Tac Toe"); // Đặt tiêu đề cửa sổ.
 
-    public Game_caro() {
-        // Cài đặt cửa sổ chính
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 800);
-        frame.getContentPane().setBackground(new Color(50, 50, 50)); // Màu nền
-        frame.setLayout(new BorderLayout());
-        frame.setVisible(true);
+        textfield.setBackground(new Color(25, 25, 25)); // Đặt màu nền cho nhãn.
+        textfield.setForeground(new Color(25, 255, 0)); // Đặt màu chữ cho nhãn.
+        textfield.setFont(new Font("Ink free", Font.BOLD, 75)); // Đặt font chữ, kiểu và kích thước.
+        textfield.setHorizontalAlignment(JLabel.CENTER); // Canh giữa nội dung trong nhãn.
+        textfield.setText("Tic Tac Toe"); // Đặt nội dung hiển thị ban đầu.
+        textfield.setOpaque(true); // Hiển thị màu nền.
 
-        // Cài đặt nhãn hiển thị trạng thái trò chơi
-        textfield.setBackground(new Color(25, 25, 25)); // Màu nền
-        textfield.setForeground(new Color(25, 255, 0)); // Màu chữ
-        textfield.setFont(new Font("Ink Free", Font.BOLD, 75)); // Font chữ
-        textfield.setHorizontalAlignment(JLabel.CENTER); // Canh giữa
-        textfield.setText("Tic-Tac-Toe"); // Văn bản ban đầu
-        textfield.setOpaque(true); // Hiển thị màu nền
+        titlePanel.setLayout(new BorderLayout()); // Sử dụng bố cục BorderLayout cho panel tiêu đề.
+        titlePanel.setBounds(0, 0, 800, 100); // Đặt kích thước cho panel.
 
-        // Panel tiêu đề (chứa nhãn)
-        titlePanel.setLayout(new BorderLayout());
-        titlePanel.setBounds(0, 0, 800, 100);
+        buttonPanel.setLayout(new GridLayout(3, 3)); // Bố cục lưới 3x3 cho panel chứa các nút.
 
-        // Panel chứa các nút chơi (bàn cờ 3x3)
-        buttonPanel.setLayout(new GridLayout(3, 3)); // Bố cục lưới 3x3
-        buttonPanel.setBackground(new Color(150, 150, 150)); // Màu nền
-
-        // Tạo các nút cho bàn cờ
         for (int i = 0; i < 9; i++) {
-            buttons[i] = new JButton(); // Tạo nút mới
-            buttonPanel.add(buttons[i]); // Thêm nút vào panel
-            buttons[i].setFont(new Font("MV Boli", Font.BOLD, 120)); // Font chữ to, đậm
-            buttons[i].setFocusable(false); // Bỏ khung chọn (focus)
-            buttons[i].addActionListener(this); // Thêm sự kiện khi nhấn nút
+            buttons[i] = new JButton(); // Tạo nút mới.
+            buttonPanel.add(buttons[i]); // Thêm nút vào panel.
+            buttons[i].setFont(new Font("MV Boli", Font.BOLD, 120)); // Đặt font chữ lớn và đậm.
+            buttons[i].setFocusable(false); // Tắt focus trên nút.
+            buttons[i].setEnabled(false); // Tạm thời vô hiệu hóa nút.
+            buttons[i].addActionListener(this); // Gắn sự kiện khi nhấn nút.
         }
 
-        // Nút Reset để chơi lại
-        resetButton.setFont(new Font("Arial", Font.PLAIN, 30)); // Font chữ
-        resetButton.addActionListener(e -> resetGame()); // Thêm sự kiện reset
-        resetPanel.add(resetButton); // Thêm nút reset vào panel
+        titlePanel.add(textfield); // Thêm nhãn vào panel tiêu đề.
+        frame.add(titlePanel, BorderLayout.NORTH); // Thêm panel tiêu đề vào phía trên.
+        frame.add(buttonPanel); // Thêm panel chứa các nút vào giữa.
 
-        // Thêm các thành phần vào khung chính
-        titlePanel.add(textfield); // Thêm nhãn vào panel tiêu đề
-        frame.add(titlePanel, BorderLayout.NORTH); // Thêm panel tiêu đề vào phía trên
-        frame.add(buttonPanel, BorderLayout.CENTER); // Thêm panel bàn cờ vào giữa
-        frame.add(resetPanel, BorderLayout.SOUTH); // Thêm panel reset vào phía dưới
-
-        // Xác định lượt chơi đầu tiên
-        firstTurn();
+        firstTurn(); // Xác định lượt chơi đầu tiên.
     }
 
-    // Xử lý sự kiện khi nhấn các nút trên bàn cờ
     @Override
     public void actionPerformed(ActionEvent e) {
         for (int i = 0; i < 9; i++) {
-            if (e.getSource() == buttons[i]) { // Kiểm tra nút nào được nhấn
-                if (player1Turn) { // Nếu là lượt của người chơi 1
-                    if (buttons[i].getText().isEmpty()) { // Chỉ xử lý nếu ô trống
-                        buttons[i].setForeground(new Color(255, 0, 0)); // Màu chữ đỏ cho X
-                        buttons[i].setText("X"); // Đặt chữ X
-                        player1Turn = false; // Chuyển lượt sang người chơi 2
-                        textfield.setText("O turn"); // Cập nhật trạng thái
-                        check(); // Kiểm tra điều kiện thắng
+            if (e.getSource() == buttons[i]) { // Kiểm tra nút nào được nhấn.
+                if (player1Turn) { // Nếu là lượt của người chơi 1.
+                    if (buttons[i].getText() == "") { // Nếu ô đó chưa có ký tự.
+                        buttons[i].setForeground(new Color(255, 0, 0)); // Đặt màu chữ đỏ cho "X".
+                        buttons[i].setText("X"); // Gán chữ "X".
+                        turns++; // Tăng số lượt.
+                        player1Turn = false; // Chuyển lượt sang người chơi 2.
+                        textfield.setText("O's turn"); // Cập nhật trạng thái.
+                        check(); // Kiểm tra điều kiện thắng/thua.
                     }
-                } else { // Nếu là lượt của người chơi 2
-                    if (buttons[i].getText().isEmpty()) { // Chỉ xử lý nếu ô trống
-                        buttons[i].setForeground(new Color(0, 0, 255)); // Màu chữ xanh cho O
-                        buttons[i].setText("O"); // Đặt chữ O
-                        player1Turn = true; // Chuyển lượt sang người chơi 1
-                        textfield.setText("X turn"); // Cập nhật trạng thái
-                        check(); // Kiểm tra điều kiện thắng
+                } else { // Nếu là lượt của người chơi 2.
+                    if (buttons[i].getText() == "") {
+                        buttons[i].setForeground(new Color(0, 0, 255)); // Đặt màu chữ xanh cho "O".
+                        buttons[i].setText("O");
+                        turns++;
+                        player1Turn = true; // Chuyển lượt sang người chơi 1.
+                        textfield.setText("X's turn");
+                        check(); // Kiểm tra điều kiện thắng/thua.
                     }
                 }
             }
         }
     }
 
-    // Xác định người chơi nào đi trước
-    private void firstTurn() {
-        player1Turn = random.nextBoolean(); // Ngẫu nhiên chọn người chơi đầu tiên
-        textfield.setText(player1Turn ? "X turn" : "O turn"); // Cập nhật trạng thái
-    }
+    public void firstTurn() {
+    timer.schedule(new TimerTask() {
+        @Override
+        public void run() {
+            if (random.nextInt(2) == 0) { // Xác định ngẫu nhiên người chơi đầu tiên.
+                player1Turn = true;
+                textfield.setText("X's turn"); // Thông báo lượt của X.
+            } else {
+                player1Turn = false;
+                textfield.setText("O's turn"); // Thông báo lượt của O.
+            }
+            for (int i = 0; i < 9; i++) {
+                buttons[i].setEnabled(true); // Bật tất cả các nút để bắt đầu chơi.
+            }
+        }
+    }, 2000); // Trì hoãn 3 giây trước khi bắt đầu.
+}
 
-    // Kiểm tra các điều kiện thắng
-    private void check() {
-        // Các điều kiện thắng cho X
-        if ((buttons[0].getText().equals("X") && buttons[1].getText().equals("X") && buttons[2].getText().equals("X"))) {
+
+    public void check() {
+        // Kiểm tra điều kiện thắng của X.
+        if ((buttons[0].getText() == "X") && (buttons[1].getText() == "X") && (buttons[2].getText() == "X")) {
             xWins(0, 1, 2);
+            tie = false;
         }
-        if ((buttons[3].getText().equals("X") && buttons[4].getText().equals("X") && buttons[5].getText().equals("X"))) {
+        if ((buttons[3].getText() == "X") && (buttons[4].getText() == "X") && (buttons[5].getText() == "X")) {
             xWins(3, 4, 5);
+            tie = false;
         }
-        // (Các điều kiện khác tương tự...)
-
-        // Các điều kiện thắng cho O
-        if ((buttons[0].getText().equals("O") && buttons[1].getText().equals("O") && buttons[2].getText().equals("O"))) {
+        if ((buttons[6].getText() == "X") && (buttons[7].getText() == "X") && (buttons[8].getText() == "X")) {
+            xWins(6, 7, 8);
+            tie = false;
+        }
+        if ((buttons[0].getText() == "X") && (buttons[3].getText() == "X") && (buttons[6].getText() == "X")) {
+            xWins(0, 3, 6);
+            tie = false;
+        }
+        if ((buttons[1].getText() == "X") && (buttons[4].getText() == "X") && (buttons[7].getText() == "X")) {
+            xWins(1, 4, 7);
+            tie = false;
+        }
+        if ((buttons[2].getText() == "X") && (buttons[5].getText() == "X") && (buttons[8].getText() == "X")) {
+            xWins(2, 5, 8);
+            tie = false;
+        }
+        if ((buttons[0].getText() == "X") && (buttons[4].getText() == "X") && (buttons[8].getText() == "X")) {
+            xWins(0, 4, 8);
+            tie = false;
+        }
+        if ((buttons[2].getText() == "X") && (buttons[4].getText() == "X") && (buttons[6].getText() == "X")) {
+            xWins(2, 4, 6);
+            tie = false;
+        }
+        // Kiểm tra điều kiện thắng của O.
+        if ((buttons[0].getText() == "O") && (buttons[1].getText() == "O") && (buttons[2].getText() == "O")) {
             oWins(0, 1, 2);
+            tie = false;
         }
-        if ((buttons[3].getText().equals("O") && buttons[4].getText().equals("O") && buttons[5].getText().equals("O"))) {
+        if ((buttons[3].getText() == "O") && (buttons[4].getText() == "O") && (buttons[5].getText() == "O")) {
             oWins(3, 4, 5);
+            tie = false;
         }
-        // (Các điều kiện khác tương tự...)
+        if ((buttons[6].getText() == "O") && (buttons[7].getText() == "O") && (buttons[8].getText() == "O")) {
+            oWins(6, 7, 8);
+            tie = false;
+        }
+        if ((buttons[0].getText() == "O") && (buttons[3].getText() == "O") && (buttons[6].getText() == "O")) {
+            oWins(0, 3, 6);
+            tie = false;
+        }
+        if ((buttons[1].getText() == "O") && (buttons[4].getText() == "O") && (buttons[7].getText() == "O")) {
+            oWins(1, 4, 7);
+            tie = false;
+        }
+        if ((buttons[2].getText() == "O") && (buttons[5].getText() == "O") && (buttons[8].getText() == "O")) {
+            oWins(2, 5, 8);
+            tie = false;
+        }
+        if ((buttons[0].getText() == "O") && (buttons[4].getText() == "O") && (buttons[8].getText() == "O")) {
+            oWins(0, 4, 8);
+            tie = false;
+        }
+        if ((buttons[2].getText() == "O") && (buttons[4].getText() == "O") && (buttons[6].getText() == "O")) {
+            oWins(2, 4, 6);
+            tie = false;
+        }
+        // Nếu như điền tất cả 9 ô rồi mà vẫn không tìm ra được bên chiến thắng thì Hòa
+        if (tie && turns == 9) {
+            tie();
+        }
     }
 
-    // Hiển thị khi X thắng
-    private void xWins(int a, int b, int c) {
-        highlightWin(a, b, c); // Tô màu các ô thắng
-        textfield.setText("X wins"); // Hiển thị trạng thái
-        disableButtons(); // Vô hiệu hóa các nút còn lại
-    }
+    public void xWins(int a, int b, int c) {
 
-    // Hiển thị khi O thắng
-    private void oWins(int a, int b, int c) {
-        highlightWin(a, b, c); // Tô màu các ô thắng
-        textfield.setText("O wins"); // Hiển thị trạng thái
-        disableButtons(); // Vô hiệu hóa các nút còn lại
-    }
-
-    // Tô màu các ô thắng
-    private void highlightWin(int a, int b, int c) {
-        buttons[a].setBackground(Color.GREEN); // Tô màu xanh lá cho các ô thắng
+        buttons[a].setBackground(Color.GREEN);
         buttons[b].setBackground(Color.GREEN);
         buttons[c].setBackground(Color.GREEN);
+        for (int i = 0; i < 9; i++) {
+            buttons[i].setEnabled(false);
+        }
+        textfield.setText("X wins!");
+        resetting();
     }
 
-    // Vô hiệu hóa các nút còn lại
-    private void disableButtons() {
-        for (JButton button : buttons) {
-            button.setEnabled(false);
+    public void oWins(int a, int b, int c) {
+
+        buttons[a].setBackground(Color.GREEN);
+        buttons[b].setBackground(Color.GREEN);
+        buttons[c].setBackground(Color.GREEN);
+        for (int i = 0; i < 9; i++) {
+            buttons[i].setEnabled(false);
         }
+        textfield.setText("O wins!");
+        resetting();
     }
 
-    // Đặt lại trạng thái trò chơi
-    private void resetGame() {
-        for (JButton button : buttons) {
-            button.setText(""); // Xóa nội dung các nút
-            button.setBackground(null); // Đặt lại màu nền
-            button.setEnabled(true); // Kích hoạt lại nút
+    public void tie() {
+
+        for (int i = 0; i < 9; i++) {
+            buttons[i].setEnabled(false);
         }
-        textfield.setText("GAME CO CARO"); // Đặt lại trạng thái
-        firstTurn(); // Xác định lượt đầu tiên
+        textfield.setText("Tie!");
+        resetting();
+
+    }
+
+    public void resetting() {
+
+        firstTurn();
+        timer.schedule(new TimerTask() {
+
+            @Override
+            public void run() {
+                for (int i = 0; i < 9; i++) {
+                    buttons[i].setEnabled(true);
+                    buttons[i].setText("");
+                    buttons[i].setBackground(null);
+                }
+            }
+        }, 2000);
     }
 }
